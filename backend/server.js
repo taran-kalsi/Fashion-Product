@@ -19,12 +19,22 @@ connectDB();
 const allowedOrigins = [
   "http://localhost:5173",                     // local frontend
   "http://127.0.0.1:8080",                     // alternate local frontend
-  "https://eloquent-rolypoly-c037fd.netlify.app" // deployed frontend
+  "https://eloquent-rolypoly-c037fd.netlify.app", // old deployed frontend
+  /\.vercel\.app$/                             // any Vercel deployment
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') return allowed === origin;
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return false;
+    });
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('CORS policy: This origin is not allowed'));
@@ -74,10 +84,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server error', message: err.message });
 });
 
-// ✅ Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🧩 Mongo URI: ${process.env.MONGO_URI ? 'Loaded' : 'Missing!'}`);
-});
+// ✅ Start server (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🧩 Mongo URI: ${process.env.MONGO_URI ? 'Loaded' : 'Missing!'}`);
+  });
+}
+
+// ✅ Export for Vercel serverless
+module.exports = app;
