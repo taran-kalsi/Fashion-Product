@@ -1,7 +1,46 @@
+// backend/server.js
+
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
+const dotenv = require('dotenv');
 const connectDB = require('./db');
+
+// ✅ Load environment variables first
+dotenv.config();
+
+// ✅ Initialize Express
+const app = express();
+
+// ✅ Connect to MongoDB
+connectDB();
+
+// ✅ CORS Middleware
+// Allows multiple origins including localhost, 127.0.0.1, and deployed frontend
+const allowedOrigins = [
+  "http://localhost:5173",                     // local frontend
+  "http://127.0.0.1:8080",                     // alternate local frontend
+  "https://eloquent-rolypoly-c037fd.netlify.app" // deployed frontend
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy: This origin is not allowed'));
+    }
+  },
+  credentials: true, // allow cookies/auth headers
+};
+
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+// Handle preflight OPTIONS requests
+app.options("*", cors(corsOptions));
+
+// ✅ Body parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // ✅ Route imports
 const cartRoutes = require("./routes/cart");
@@ -11,30 +50,18 @@ const sellRoutes = require("./routes/sell");
 const tradeRoutes = require("./routes/trade");
 const authRoutes = require("./routes/auth");
 
-// Initialize Express
-const app = express();
-
-// ✅ Connect to MongoDB
-connectDB();
-
-// ✅ Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' })); // support large JSON/base64 images
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
-
 // ✅ API Routes
-app.use("/api/admin", adminRoutes);           // admin routes (featured + buy approvals)
+app.use("/api/admin", adminRoutes);
 app.use("/api/admin/featured", featuredRoutes);
 app.use("/api/sell", sellRoutes);
 app.use("/api/trades", tradeRoutes);
-app.use("/api/cart", cartRoutes);            // cart routes (add, delete, update-status)
-app.use("/api/auth", authRoutes);            // authentication
+app.use("/api/cart", cartRoutes);
+app.use("/api/auth", authRoutes);
 
 // ✅ Root route
-app.get('/', (req, res) => res.send('UpStyle API running 🚀'));
-
-// ✅ Serve frontend (optional)
-// app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+  res.send('🚀 UpStyle API running successfully!');
+});
 
 // ✅ Handle unknown routes
 app.use((req, res) => {
@@ -49,4 +76,8 @@ app.use((err, req, res, next) => {
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🧩 Mongo URI: ${process.env.MONGO_URI ? 'Loaded' : 'Missing!'}`);
+});
