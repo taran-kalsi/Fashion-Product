@@ -11,8 +11,8 @@ dotenv.config();
 // ✅ Initialize Express
 const app = express();
 
-// ✅ Connect to MongoDB
-connectDB();
+// ✅ Connect to MongoDB (don't wait, will connect on first request)
+connectDB().catch(err => console.error('❌ Initial DB connection failed:', err.message));
 
 // ✅ CORS Middleware
 // Allows multiple origins including localhost, 127.0.0.1, and deployed frontend
@@ -51,6 +51,17 @@ app.options("*", cors(corsOptions));
 // ✅ Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// ✅ Ensure DB connection before API requests
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('❌ DB connection middleware error:', err);
+    res.status(500).json({ error: 'Database connection failed', msg: err.message });
+  }
+});
 
 // ✅ Route imports
 const cartRoutes = require("./routes/cart");

@@ -94,6 +94,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="config.js"></script>
 <script>
 const loginForm = document.getElementById('loginForm');
 const toast = document.getElementById('toast');
@@ -114,7 +115,7 @@ loginForm.addEventListener('submit', async (e) => {
 
   try {
     console.log("Submitting login:", {email, password, role});
-    const res = await fetch('http://localhost:5000/api/auth/login', {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ email, password, role })
